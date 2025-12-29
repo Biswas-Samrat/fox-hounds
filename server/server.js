@@ -127,7 +127,7 @@ app.post('/api/contact', (req, res) => {
 });
 
 // Wildcard route: Redirect all other requests to React's index.html
-app.get('/*', (req, res) => {
+app.get(/^(?!\/api).+/, (req, res) => {
     res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
