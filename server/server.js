@@ -1,16 +1,29 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Fix for __dirname in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// On Render, we want to allow the frontend to talk to the backend
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 app.use(cors({
     origin: FRONTEND_URL,
     credentials: true
 }));
-app.use(helmet());
+
+// Security middleware - modified to allow images/scripts from your own domain
+app.use(helmet({
+    contentSecurityPolicy: false, 
+}));
+
 app.use(express.json());
 
 const menuData = {
@@ -99,6 +112,11 @@ const menuData = {
     }
 };
 
+// --- SERVE FRONTEND ---
+// This serves the built React files from the 'dist' folder
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// API Routes
 app.get('/api/menu', (req, res) => {
     res.json(menuData);
 });
@@ -106,6 +124,11 @@ app.get('/api/menu', (req, res) => {
 app.post('/api/contact', (req, res) => {
     console.log('Contact form submitted:', req.body);
     res.json({ success: true, message: 'Message received!' });
+});
+
+// Wildcard route: Redirect all other requests to React's index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
